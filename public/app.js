@@ -404,32 +404,7 @@ function getLocalPalpites() {
   if (data) {
     try { return JSON.parse(data); } catch(e) {}
   }
-  const sample = [
-    {
-      id: 1,
-      name: "Ronaldo Fenômeno",
-      matchId: "brasil-japao",
-      matchLabel: "🇧🇷 Brasil vs 🇯🇵 Japão",
-      scoreA: 3,
-      scoreB: 1,
-      scorer: "Vini Jr. (Brasil), Matheus Cunha (Brasil)",
-      timePeriod: "25', 68'",
-      comment: "Rumo ao Hexa! Vini vai brilhar no NRG Stadium!",
-      timestamp: new Date().toISOString()
-    },
-    {
-      id: 2,
-      name: "Samurai Blue Fan",
-      matchId: "brasil-japao",
-      matchLabel: "🇧🇷 Brasil vs 🇯🇵 Japão",
-      scoreA: 1,
-      scoreB: 2,
-      scorer: "Ritsu Doan (Japão)",
-      timePeriod: "45'",
-      comment: "Japão vai surpreender nos contra-ataques!",
-      timestamp: new Date().toISOString()
-    }
-  ];
+  const sample = [];
   localStorage.setItem('fifa_2026_palpites_db', JSON.stringify(sample));
   return sample;
 }
