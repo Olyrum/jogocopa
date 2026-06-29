@@ -399,6 +399,8 @@ function initTimer() {
   setInterval(updateClock, 1000);
 }
 
+const CLOUD_API = "https://jsonblob.com/api/jsonBlob/019f1415-df75-7fe2-be48-882d34e713ca";
+
 function getLocalPalpites() {
   const data = localStorage.getItem('fifa_2026_palpites_db');
   if (data) {
@@ -414,9 +416,16 @@ function getLocalPalpites() {
   return sample;
 }
 
-function saveLocalPalpite(payload) {
-  const palpites = getLocalPalpites();
-  
+async function saveCloudPalpite(payload) {
+  let palpites = getLocalPalpites();
+  try {
+    const cloudRes = await fetch(CLOUD_API);
+    if (cloudRes.ok) {
+      let list = await cloudRes.json();
+      if (Array.isArray(list)) palpites = list.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
+    }
+  } catch(e) {}
+
   const count = palpites.filter(
     p => p.matchId === payload.matchId && p.name.trim().toLowerCase() === payload.name.trim().toLowerCase()
   ).length;
@@ -432,6 +441,15 @@ function saveLocalPalpite(payload) {
   };
   palpites.unshift(entry);
   localStorage.setItem('fifa_2026_palpites_db', JSON.stringify(palpites));
+
+  try {
+    await fetch(CLOUD_API, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(palpites)
+    });
+  } catch(e) {}
+
   return { success: true, palpite: entry };
 }
 
@@ -447,7 +465,19 @@ async function fetchPalpites() {
     allPalpites = list.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
     renderFeed();
   } catch (err) {
-    // Modo estático no GitHub Pages
+    // Busca online na Nuvem Gratuita (JSONBlob) para GitHub Pages
+    try {
+      const cloudRes = await fetch(CLOUD_API);
+      if (cloudRes.ok) {
+        let list = await cloudRes.json();
+        if (Array.isArray(list)) {
+          allPalpites = list.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
+          localStorage.setItem('fifa_2026_palpites_db', JSON.stringify(allPalpites));
+          renderFeed();
+          return;
+        }
+      }
+    } catch(e) {}
     allPalpites = getLocalPalpites();
     renderFeed();
   }
@@ -630,8 +660,8 @@ function setupEventListeners() {
         handleSuccess();
       }
     } catch (err) {
-      // Modo estático no GitHub Pages
-      const localRes = saveLocalPalpite(payload);
+      // Modo nuvem online no GitHub Pages
+      const localRes = await saveCloudPalpite(payload);
       if (localRes.error) {
         showToast(localRes.error);
       } else {
