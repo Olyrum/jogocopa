@@ -61,15 +61,15 @@ function getPalpites() {
   }
 }
 
-const CLOUD_API = "https://jsonblob.com/api/jsonBlob/019f1415-df75-7fe2-be48-882d34e713ca";
+const CLOUD_API = "https://api.restful-api.dev/objects/ff8081819d82fab6019f14318ce67522";
 
 function savePalpites(palpites) {
   fs.writeFileSync(PALPITES_FILE, JSON.stringify(palpites, null, 2), 'utf8');
   if (typeof fetch !== 'undefined') {
     fetch(CLOUD_API, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify(palpites)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: "BolaoCopa2026", data: { palpites } })
     }).catch(() => {});
   }
 }

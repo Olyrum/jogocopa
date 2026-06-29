@@ -399,7 +399,7 @@ function initTimer() {
   setInterval(updateClock, 1000);
 }
 
-const CLOUD_API = "https://jsonblob.com/api/jsonBlob/019f1415-df75-7fe2-be48-882d34e713ca";
+const CLOUD_API = "https://api.restful-api.dev/objects/ff8081819d82fab6019f14318ce67522";
 
 function getLocalPalpites() {
   const data = localStorage.getItem('fifa_2026_palpites_db');
@@ -421,7 +421,8 @@ async function saveCloudPalpite(payload) {
   try {
     const cloudRes = await fetch(CLOUD_API);
     if (cloudRes.ok) {
-      let list = await cloudRes.json();
+      let resData = await cloudRes.json();
+      let list = resData && resData.data && resData.data.palpites ? resData.data.palpites : [];
       if (Array.isArray(list)) palpites = list.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
     }
   } catch(e) {}
@@ -445,8 +446,8 @@ async function saveCloudPalpite(payload) {
   try {
     await fetch(CLOUD_API, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify(palpites)
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "BolaoCopa2026", data: { palpites } })
     });
   } catch(e) {}
 
@@ -465,11 +466,12 @@ async function fetchPalpites() {
     allPalpites = list.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
     renderFeed();
   } catch (err) {
-    // Busca online na Nuvem Gratuita (JSONBlob) para GitHub Pages
+    // Busca online com suporte a CORS para GitHub Pages
     try {
       const cloudRes = await fetch(CLOUD_API);
       if (cloudRes.ok) {
-        let list = await cloudRes.json();
+        let resData = await cloudRes.json();
+        let list = resData && resData.data && resData.data.palpites ? resData.data.palpites : [];
         if (Array.isArray(list)) {
           allPalpites = list.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
           localStorage.setItem('fifa_2026_palpites_db', JSON.stringify(allPalpites));
