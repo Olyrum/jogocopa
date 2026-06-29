@@ -402,7 +402,12 @@ function initTimer() {
 function getLocalPalpites() {
   const data = localStorage.getItem('fifa_2026_palpites_db');
   if (data) {
-    try { return JSON.parse(data); } catch(e) {}
+    try { 
+      let parsed = JSON.parse(data);
+      parsed = parsed.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
+      localStorage.setItem('fifa_2026_palpites_db', JSON.stringify(parsed));
+      return parsed; 
+    } catch(e) {}
   }
   const sample = [];
   localStorage.setItem('fifa_2026_palpites_db', JSON.stringify(sample));
@@ -438,7 +443,8 @@ async function fetchPalpites() {
     if (!contentType || !contentType.includes("application/json")) {
       throw new Error("Static server response");
     }
-    allPalpites = await res.json();
+    let list = await res.json();
+    allPalpites = list.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
     renderFeed();
   } catch (err) {
     // Modo estático no GitHub Pages
