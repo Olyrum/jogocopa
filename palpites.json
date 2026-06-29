@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1782747426342,
+    "name": "Murylo",
+    "matchId": "brasil-japao",
+    "matchLabel": "🇧🇷 Brasil vs 🇯🇵 Japão (29/06 - 13h Cuiabá / 14h Brasília)",
+    "scoreA": 3,
+    "scoreB": 2,
+    "scorer": "Apenas Placar Geral",
+    "timePeriod": "Não especificado",
+    "comment": "teste",
+    "timestamp": "2026-06-29T15:37:06.342Z"
+  },
+  {
+    "id": 1782745890050,
+    "name": "Murylo",
+    "matchId": "brasil-japao",
+    "matchLabel": "Brasil 🇧🇷 vs 🇯🇵 Japão (Hoje 13:00)",
+    "scoreA": 2,
+    "scoreB": 1,
+    "scorer": "Apenas Placar Geral",
+    "timePeriod": "Não especificado",
+    "comment": "Rumo ao eça",
+    "timestamp": "2026-06-29T15:11:30.050Z"
+  }
+]
