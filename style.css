@@ -643,3 +643,150 @@ textarea:focus {
     justify-content: center;
   }
 }
+
+/* ==========================================================================
+   Auth Overlays & Pending Approval UI
+   ========================================================================== */
+.auth-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(3, 18, 43, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-modal {
+  width: 100%;
+  max-width: 520px;
+  background: var(--bg-card);
+  border: 1px solid rgba(199, 255, 2, 0.3);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(4, 86, 148, 0.4);
+  text-align: center;
+  padding: 36px 32px;
+  animation: modalPop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPop {
+  0% { transform: scale(0.92); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.auth-badge {
+  display: inline-block;
+  background: var(--primary-blue);
+  color: #FFF;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 6px 14px;
+  border-radius: 30px;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+
+.auth-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #FFF;
+  margin-bottom: 10px;
+}
+
+.auth-subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+.auth-form {
+  text-align: left;
+}
+
+.pending-card {
+  max-width: 580px;
+  border-color: rgba(255, 179, 0, 0.4);
+}
+
+.pending-icon-box {
+  font-size: 4.2rem;
+  line-height: 1;
+  margin-bottom: 12px;
+  animation: pulseRotate 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseRotate {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.1) rotate(10deg); }
+}
+
+.pending-info-box {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pending-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: #E0E8F5;
+  line-height: 1.4;
+}
+
+.step-dot {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  color: var(--accent-lime);
+}
+
+.status-pill-pending {
+  background: rgba(255, 179, 0, 0.2);
+  color: #FFB300;
+  border: 1px solid #FFB300;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFF;
+  border: 1px solid var(--border-color);
+  border-radius: 45px;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #FFF;
+}

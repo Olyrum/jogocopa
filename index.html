@@ -14,6 +14,57 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Auth Login Overlay -->
+  <div id="auth-login-overlay" class="auth-overlay">
+    <div class="auth-modal glass-card tilt-card">
+      <div class="auth-badge">🔐 FIFA PLAYZONE™ AUTENTICAÇÃO</div>
+      <h2 class="auth-title">Identifique-se para Acessar</h2>
+      <p class="auth-subtitle">Digite seu nome ou apelido para acessar o mural da Copa do Mundo FIFA 2026™ e dar seus palpites.</p>
+      
+      <form id="auth-login-form" class="auth-form">
+        <div class="input-group">
+          <label for="auth-username-input">Seu Nome ou Apelido</label>
+          <input type="text" id="auth-username-input" placeholder="Ex: Torcedor Brasil ou João Silva" required autocomplete="name">
+        </div>
+        <button type="submit" class="btn-glow mt-4">
+          <span>ENTRAR NO BOLÃO</span>
+          <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Auth Pending Approval Overlay -->
+  <div id="auth-pending-overlay" class="auth-overlay hidden">
+    <div class="auth-modal glass-card tilt-card pending-card">
+      <div class="pending-icon-box">⏳</div>
+      <div class="auth-badge" style="background: #FFB300; color: #000;">AGUARDANDO APROVAÇÃO</div>
+      <h2 class="auth-title mt-3">Acesso em Análise</h2>
+      <p class="auth-subtitle">
+        Olá, <strong id="pending-user-name" style="color:var(--accent-lime);">Torcedor</strong>! Seu cadastro foi registrado com sucesso no Firebase Firestore.
+      </p>
+      
+      <div class="pending-info-box">
+        <div class="pending-step">
+          <span class="step-dot">1</span>
+          <p>O seu status atual no banco de dados está como <span class="status-pill-pending">PENDENTE</span>.</p>
+        </div>
+        <div class="pending-step">
+          <span class="step-dot">2</span>
+          <p>Para liberar o acesso ao site, o administrador deve ir no <strong>Firebase Console > Firestore > coleção <code>usuarios</code></strong> e alterar o campo <code>status</code> de <strong>"pendente"</strong> para <strong>"aprovado"</strong>.</p>
+        </div>
+        <div class="pending-step">
+          <span class="step-dot">⚡</span>
+          <p><strong>Sincronização ao Vivo:</strong> Assim que aprovado na Firestore, esta tela abrirá automaticamente!</p>
+        </div>
+      </div>
+
+      <button type="button" id="auth-switch-user-btn" class="btn-secondary mt-4">
+        <span>🔄 Trocar de Usuário / Sair</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Header Section -->
   <header class="app-header glass-panel">
     <div class="header-container">
@@ -163,6 +214,6 @@
     <p>🏆 Design inspirado no ecossistema FIFA World Cup 2026™ | Powered by Antigravity Skills & Firecrawl MCP</p>
   </footer>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

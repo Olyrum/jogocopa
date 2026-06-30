@@ -1,6 +1,23 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC_mwmLGmcIpfUyRLGRajTd27kYBsZez4c",
+  authDomain: "palpitejogos.firebaseapp.com",
+  projectId: "palpitejogos",
+  storageBucket: "palpitejogos.firebasestorage.app",
+  messagingSenderId: "988785823883",
+  appId: "1:988785823883:web:e577a9296884813448848e",
+  measurementId: "G-ECDHX33V9P"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 // State
 let currentFilter = 'all';
 let allPalpites = [];
+let authUnsubscribe = null;
 
 const MATCH_DATA = {
   "brasil-japao": { 
@@ -165,6 +182,7 @@ const TEAM_PLAYERS = {
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
+  initAuthFlow();
   initUser();
   initMatchSelector();
   initTimer();
@@ -172,19 +190,128 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
 });
 
+function initAuthFlow() {
+  const savedUsername = localStorage.getItem('fifa_auth_username');
+  const loginOverlay = document.getElementById('auth-login-overlay');
+  const pendingOverlay = document.getElementById('auth-pending-overlay');
+  const loginForm = document.getElementById('auth-login-form');
+  const switchUserBtn = document.getElementById('auth-switch-user-btn');
+
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const usernameInput = document.getElementById('auth-username-input');
+      const name = usernameInput ? usernameInput.value.trim() : '';
+      if (!name) return;
+
+      localStorage.setItem('fifa_auth_username', name);
+      await checkUserStatusInFirestore(name);
+    });
+  }
+
+  if (switchUserBtn) {
+    switchUserBtn.addEventListener('click', () => {
+      if (authUnsubscribe) authUnsubscribe();
+      localStorage.removeItem('fifa_auth_username');
+      localStorage.removeItem('fifa_user_name');
+      pendingOverlay.classList.add('hidden');
+      loginOverlay.classList.remove('hidden');
+      const input = document.getElementById('auth-username-input');
+      if (input) input.value = '';
+    });
+  }
+
+  if (!savedUsername) {
+    loginOverlay.classList.remove('hidden');
+    pendingOverlay.classList.add('hidden');
+  } else {
+    checkUserStatusInFirestore(savedUsername);
+  }
+}
+
+async function checkUserStatusInFirestore(username) {
+  const loginOverlay = document.getElementById('auth-login-overlay');
+  const pendingOverlay = document.getElementById('auth-pending-overlay');
+  const pendingNameEl = document.getElementById('pending-user-name');
+
+  if (pendingNameEl) pendingNameEl.textContent = username;
+
+  const userDocRef = doc(db, "usuarios", username);
+
+  try {
+    const docSnap = await getDoc(userDocRef);
+    if (!docSnap.exists()) {
+      await setDoc(userDocRef, {
+        nome: username,
+        status: "pendente",
+        dataCadastro: new Date().toISOString()
+      });
+    }
+  } catch (err) {
+    console.error("Erro ao verificar status no Firestore:", err);
+  }
+
+  if (authUnsubscribe) authUnsubscribe();
+
+  authUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const status = data.status || "pendente";
+
+      if (status.toLowerCase() === "aprovado") {
+        loginOverlay.classList.add('hidden');
+        pendingOverlay.classList.add('hidden');
+        unlockApprovedUser(username);
+      } else {
+        loginOverlay.classList.add('hidden');
+        pendingOverlay.classList.remove('hidden');
+      }
+    } else {
+      loginOverlay.classList.add('hidden');
+      pendingOverlay.classList.remove('hidden');
+    }
+  }, (err) => {
+    console.error("Erro no listener onSnapshot:", err);
+  });
+}
+
+function unlockApprovedUser(username) {
+  localStorage.setItem('fifa_user_name', username);
+  const input = document.getElementById('user-name-input');
+  if (input) {
+    input.value = username;
+    input.readOnly = true;
+    input.style.background = 'rgba(199, 255, 2, 0.1)';
+    input.style.borderColor = 'var(--accent-lime)';
+  }
+  showStatusMsg(`✅ Acesso <strong>APROVADO</strong>! Conectado como <strong>${username}</strong> (<a href="#" id="auth-logout-link" style="color:var(--accent-lime); text-decoration:underline; font-weight:bold;">Sair</a>)`);
+
+  const logoutLink = document.getElementById('auth-logout-link');
+  if (logoutLink) {
+    logoutLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (authUnsubscribe) authUnsubscribe();
+      localStorage.removeItem('fifa_auth_username');
+      localStorage.removeItem('fifa_user_name');
+      location.reload();
+    });
+  }
+}
+
 function initUser() {
-  const savedName = localStorage.getItem('fifa_user_name');
+  const savedName = localStorage.getItem('fifa_user_name') || localStorage.getItem('fifa_auth_username');
   if (savedName) {
     const input = document.getElementById('user-name-input');
-    input.value = savedName;
-    showStatusMsg(`Olá novamente, craque <strong>${savedName}</strong>! Pronto para palpitar?`);
+    if (input) input.value = savedName;
   }
 }
 
 function showStatusMsg(msg) {
   const box = document.getElementById('user-status-msg');
-  box.innerHTML = msg;
-  box.classList.remove('hidden');
+  if (box) {
+    box.innerHTML = msg;
+    box.classList.remove('hidden');
+  }
 }
 
 function initMatchSelector() {
