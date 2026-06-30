@@ -182,14 +182,31 @@ function initMatchSelector() {
   if (!selector) return;
   selector.innerHTML = '';
 
-  Object.keys(MATCH_DATA).forEach(key => {
+  const now = Date.now();
+  const allKeys = Object.keys(MATCH_DATA);
+
+  // Separar jogos futuros/ativos dos jogos encerrados
+  const upcomingKeys = allKeys.filter(key => now < new Date(MATCH_DATA[key].deadline).getTime());
+
+  allKeys.forEach(key => {
     const m = MATCH_DATA[key];
+    const isExpired = now >= new Date(m.deadline).getTime();
     const opt = document.createElement('option');
     opt.value = key;
     opt.setAttribute('data-label', m.label);
-    opt.textContent = `${m.label} [Limite: 2 palpites]`;
+    if (isExpired) {
+      opt.textContent = `⛔ [ENCERRADO] ${m.label}`;
+      opt.style.color = '#EF4444';
+    } else {
+      opt.textContent = `⚽ ${m.label} [Limite: 2 palpites]`;
+    }
     selector.appendChild(opt);
   });
+
+  // Selecionar por padrão o próximo jogo ativo mais próximo da rodada
+  if (upcomingKeys.length > 0) {
+    selector.value = upcomingKeys[0];
+  }
 
   const filterContainer = document.querySelector('.feed-filters');
   if (filterContainer) {
@@ -202,8 +219,8 @@ function initMatchSelector() {
       </button>
     `;
     
-    // Apenas jogos de hoje / mais próximos (29/06) nos botões para não poluir a tela
-    const todaysMatches = ['brasil-japao', 'alemanha-paraguai', 'holanda-marrocos'];
+    // Apenas os próximos 3 jogos da rodada no mural lateral
+    const todaysMatches = upcomingKeys.length > 0 ? upcomingKeys.slice(0, 3) : allKeys.slice(-3);
     todaysMatches.forEach(key => {
       const m = MATCH_DATA[key];
       if (!m) return;
@@ -232,11 +249,13 @@ function initMatchSelector() {
     let selectHtml = `<select class="custom-select filter-dropdown" title="Outras Rodadas" style="padding: 8px 12px; font-size: 1rem; width: auto; max-width: 160px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; border-radius: 30px; background: rgba(3,18,43,0.8); border: 1px solid var(--accent-lime); color: #FFF; cursor: pointer; text-align: center;">`;
     selectHtml += `<option value="">➡️</option>`;
     
-    Object.keys(MATCH_DATA).forEach(key => {
+    allKeys.forEach(key => {
       if (!todaysMatches.includes(key)) {
         const m = MATCH_DATA[key];
         const shortTime = m.timeText.split(' (')[0];
-        selectHtml += `<option value="${key}">${m.a} x ${m.b} (${shortTime})</option>`;
+        const isExpired = now >= new Date(m.deadline).getTime();
+        const prefix = isExpired ? "🏁 [ENCERRADO] " : "📅 ";
+        selectHtml += `<option value="${key}">${prefix}${m.a} x ${m.b} (${shortTime})</option>`;
       }
     });
     selectHtml += `</select>`;
@@ -276,6 +295,8 @@ function initMatchSelector() {
 
 function updateMatchDisplay(matchId) {
   const data = MATCH_DATA[matchId] || { a: "Time A", b: "Time B", flagA: "⚽", flagB: "⚽" };
+  const now = Date.now();
+  const isExpired = data.deadline ? now >= new Date(data.deadline).getTime() : false;
   
   if (data.flagImgA) {
     document.getElementById('flag-a').innerHTML = `<img src="${data.flagImgA}" class="flag-img" alt="${data.a}">`;
@@ -297,10 +318,48 @@ function updateMatchDisplay(matchId) {
   document.getElementById('name-b').textContent = data.b;
   document.getElementById('label-score-b').textContent = data.b;
 
+  const tagEl = document.querySelector('.featured-tag');
+  if (tagEl) {
+    if (isExpired) {
+      tagEl.innerHTML = `⛔ PARTIDA ENCERRADA / EM ANDAMENTO (${data.timeText.split(' - ')[0]})`;
+      tagEl.style.background = 'rgba(239, 68, 68, 0.2)';
+      tagEl.style.color = '#EF4444';
+      tagEl.style.borderColor = '#EF4444';
+    } else {
+      tagEl.innerHTML = `🔥 JOGO EM DESTAQUE - ${data.timeText.split(' - ')[0]}`;
+      tagEl.style.background = '';
+      tagEl.style.color = '';
+      tagEl.style.borderColor = '';
+    }
+  }
+
   const alertBox = document.getElementById('rule-alert');
   if (alertBox) {
-    alertBox.innerHTML = `⚡ <strong>Regra do Jogo (16-avos):</strong> Limite de <strong>2 palpites por pessoa</strong>! Horário do jogo: <strong>${data.timeText || 'A definir'}</strong> (Envios bloqueados no início da partida).`;
+    if (isExpired) {
+      alertBox.innerHTML = `⛔ <strong>PALPITES ENCERRADOS!</strong> O horário limite para esta partida já encerrou (${data.timeText}). Escolha outro jogo disponível para enviar seu palpite!`;
+      alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+      alertBox.style.borderColor = '#EF4444';
+    } else {
+      alertBox.innerHTML = `⚡ <strong>Regra do Jogo (16-avos):</strong> Limite de <strong>2 palpites por pessoa</strong>! Horário do jogo: <strong>${data.timeText || 'A definir'}</strong> (Envios bloqueados no início da partida).`;
+      alertBox.style.background = '';
+      alertBox.style.borderColor = '';
+    }
     alertBox.classList.remove('hidden');
+  }
+
+  const submitBtn = document.getElementById('submit-btn');
+  if (submitBtn) {
+    if (isExpired) {
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.4';
+      submitBtn.style.cursor = 'not-allowed';
+      submitBtn.innerHTML = `<span>⛔ PALPITES ENCERRADOS PARA ESTE JOGO</span>`;
+    } else {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+      submitBtn.innerHTML = `<span>REGISTRAR MEU PALPITE</span><svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+    }
   }
 
   renderDynamicGoals();
