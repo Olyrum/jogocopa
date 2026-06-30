@@ -18,6 +18,13 @@ const db = getFirestore(app);
 let currentFilter = 'all';
 let allPalpites = [];
 let authUnsubscribe = null;
+let clientIp = 'Desconhecido';
+
+// Fetch client IP address immediately
+fetch('https://api.ipify.org?format=json')
+  .then(r => r.json())
+  .then(d => { if (d.ip) clientIp = d.ip; })
+  .catch(e => console.log('Erro ao obter IP:', e));
 
 const MATCH_DATA = {
   "brasil-japao": { 
@@ -232,9 +239,19 @@ function initAuthFlow() {
 async function checkUserStatusInFirestore(username) {
   const loginOverlay = document.getElementById('auth-login-overlay');
   const pendingOverlay = document.getElementById('auth-pending-overlay');
+  const blockedOverlay = document.getElementById('auth-blocked-overlay');
   const pendingNameEl = document.getElementById('pending-user-name');
 
   if (pendingNameEl) pendingNameEl.textContent = username;
+
+  // Ensure we have clientIp
+  if (clientIp === 'Desconhecido') {
+    try {
+      const r = await fetch('https://api.ipify.org?format=json');
+      const d = await r.json();
+      if (d.ip) clientIp = d.ip;
+    } catch(e) {}
+  }
 
   const userDocRef = doc(db, "usuarios", username);
 
@@ -243,9 +260,13 @@ async function checkUserStatusInFirestore(username) {
     if (!docSnap.exists()) {
       await setDoc(userDocRef, {
         nome: username,
+        ip: clientIp,
         status: "pendente",
         dataCadastro: new Date().toISOString()
       });
+    } else {
+      // Atualiza o IP mais recente do usuário se já existir
+      try { await setDoc(userDocRef, { ip: clientIp }, { merge: true }); } catch(e){}
     }
   } catch (err) {
     console.error("Erro ao verificar status no Firestore:", err);
@@ -258,16 +279,23 @@ async function checkUserStatusInFirestore(username) {
       const data = docSnap.data();
       const status = data.status || "pendente";
 
-      if (status.toLowerCase() === "aprovado") {
+      if (status.toLowerCase() === "bloqueado") {
         loginOverlay.classList.add('hidden');
         pendingOverlay.classList.add('hidden');
+        if (blockedOverlay) blockedOverlay.classList.remove('hidden');
+      } else if (status.toLowerCase() === "aprovado") {
+        loginOverlay.classList.add('hidden');
+        pendingOverlay.classList.add('hidden');
+        if (blockedOverlay) blockedOverlay.classList.add('hidden');
         unlockApprovedUser(username);
       } else {
         loginOverlay.classList.add('hidden');
+        if (blockedOverlay) blockedOverlay.classList.add('hidden');
         pendingOverlay.classList.remove('hidden');
       }
     } else {
       loginOverlay.classList.add('hidden');
+      if (blockedOverlay) blockedOverlay.classList.add('hidden');
       pendingOverlay.classList.remove('hidden');
     }
   }, (err) => {
@@ -826,6 +854,7 @@ function setupEventListeners() {
 
     const payload = {
       name,
+      ip: clientIp,
       matchId,
       matchLabel,
       scoreA,
