@@ -8,21 +8,24 @@ const MATCH_DATA = {
     flagImgA: "bandeira-do-brasil.png", flagImgB: "bandeira-do-japao.png", 
     label: "🇧🇷 Brasil vs 🇯🇵 Japão (29/06 - 13h Cuiabá / 14h Brasília)", 
     timeText: "29/06 às 13h00 (Cuiabá) / 14h00 (Brasília) - NRG Stadium",
-    deadline: "2026-06-29T17:00:00Z" 
+    deadline: "2026-06-29T17:00:00Z",
+    finished: true
   },
   "alemanha-paraguai": { 
     a: "Alemanha", b: "Paraguai", flagA: "🇩🇪", flagB: "🇵🇾", 
     flagImgA: "https://static.significados.com.br/flags/de.svg", flagImgB: "https://static.significados.com.br/flags/py.svg", 
     label: "🇩🇪 Alemanha vs 🇵🇾 Paraguai (29/06 - 16h30 Cuiabá / 17h30 Brasília)", 
     timeText: "29/06 às 16h30 (Cuiabá) / 17h30 (Brasília) - Gillette Stadium",
-    deadline: "2026-06-29T20:30:00Z" 
+    deadline: "2026-06-29T20:30:00Z",
+    finished: true
   },
   "holanda-marrocos": { 
     a: "Holanda", b: "Marrocos", flagA: "🇳🇱", flagB: "🇲🇦", 
     flagImgA: "https://static.significados.com.br/flags/nl.svg", flagImgB: "https://static.significados.com.br/flags/ma.svg", 
     label: "🇳🇱 Holanda vs 🇲🇦 Marrocos (29/06 - 21h Cuiabá / 22h Brasília)", 
     timeText: "29/06 às 21h00 (Cuiabá) / 22h00 (Brasília) - Estádio BBVA",
-    deadline: "2026-06-30T01:00:00Z" 
+    deadline: "2026-06-30T01:00:00Z",
+    finished: true
   },
   "costa-noruega": { 
     a: "Costa do Marfim", b: "Noruega", flagA: "🇨🇮", flagB: "🇳🇴", 
@@ -110,6 +113,13 @@ const MATCH_DATA = {
   }
 };
 
+function isMatchExpired(m) {
+  if (!m) return false;
+  if (m.finished === true) return true;
+  if (!m.deadline) return false;
+  return Date.now() >= new Date(m.deadline).getTime();
+}
+
 const TEAM_PLAYERS = {
   "Brasil": [
     "Vini Jr.", "Matheus Cunha", "Rayan", "Lucas Paquetá", 
@@ -186,11 +196,11 @@ function initMatchSelector() {
   const allKeys = Object.keys(MATCH_DATA);
 
   // Separar jogos futuros/ativos dos jogos encerrados
-  const upcomingKeys = allKeys.filter(key => now < new Date(MATCH_DATA[key].deadline).getTime());
+  const upcomingKeys = allKeys.filter(key => !isMatchExpired(MATCH_DATA[key]));
 
   allKeys.forEach(key => {
     const m = MATCH_DATA[key];
-    const isExpired = now >= new Date(m.deadline).getTime();
+    const isExpired = isMatchExpired(m);
     const opt = document.createElement('option');
     opt.value = key;
     opt.setAttribute('data-label', m.label);
@@ -253,7 +263,7 @@ function initMatchSelector() {
       if (!todaysMatches.includes(key)) {
         const m = MATCH_DATA[key];
         const shortTime = m.timeText.split(' (')[0];
-        const isExpired = now >= new Date(m.deadline).getTime();
+        const isExpired = isMatchExpired(m);
         const prefix = isExpired ? "🏁 [ENCERRADO] " : "📅 ";
         selectHtml += `<option value="${key}">${prefix}${m.a} x ${m.b} (${shortTime})</option>`;
       }
@@ -295,8 +305,7 @@ function initMatchSelector() {
 
 function updateMatchDisplay(matchId) {
   const data = MATCH_DATA[matchId] || { a: "Time A", b: "Time B", flagA: "⚽", flagB: "⚽" };
-  const now = Date.now();
-  const isExpired = data.deadline ? now >= new Date(data.deadline).getTime() : false;
+  const isExpired = isMatchExpired(data);
   
   if (data.flagImgA) {
     document.getElementById('flag-a').innerHTML = `<img src="${data.flagImgA}" class="flag-img" alt="${data.a}">`;
@@ -651,6 +660,11 @@ function setupEventListeners() {
     localStorage.setItem('fifa_user_name', name);
 
     const matchId = document.getElementById('match-selector').value;
+    const mData = MATCH_DATA[matchId];
+    if (isMatchExpired(mData)) {
+      showToast("⛔ Erro: O horário limite para enviar palpites para este jogo já encerrou!");
+      return;
+    }
     const matchLabel = document.getElementById('match-selector').options[document.getElementById('match-selector').selectedIndex].getAttribute('data-label');
     const scoreA = document.getElementById('score-a-input').value;
     const scoreB = document.getElementById('score-b-input').value;
