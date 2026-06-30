@@ -61,15 +61,15 @@ function getPalpites() {
   }
 }
 
-const CLOUD_API = "https://api.restful-api.dev/objects/ff8081819d82fab6019f14318ce67522";
+const CLOUD_API = "https://firestore.googleapis.com/v1/projects/palpitejogos/databases/(default)/documents/bolao/feed?key=AIzaSyC_mwmLGmcIpfUyRLGRajTd27kYBsZez4c";
 
 function savePalpites(palpites) {
   fs.writeFileSync(PALPITES_FILE, JSON.stringify(palpites, null, 2), 'utf8');
   if (typeof fetch !== 'undefined') {
     fetch(CLOUD_API, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: "BolaoCopa2026", data: { palpites } })
+      body: JSON.stringify({ fields: { json: { stringValue: JSON.stringify(palpites) } } })
     }).catch(() => {});
   }
 }

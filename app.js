@@ -399,7 +399,7 @@ function initTimer() {
   setInterval(updateClock, 1000);
 }
 
-const CLOUD_API = "https://api.restful-api.dev/objects/ff8081819d82fab6019f14318ce67522";
+const CLOUD_API = "https://firestore.googleapis.com/v1/projects/palpitejogos/databases/(default)/documents/bolao/feed?key=AIzaSyC_mwmLGmcIpfUyRLGRajTd27kYBsZez4c";
 
 function getLocalPalpites() {
   const data = localStorage.getItem('fifa_2026_palpites_db');
@@ -422,8 +422,11 @@ async function saveCloudPalpite(payload) {
     const cloudRes = await fetch(CLOUD_API);
     if (cloudRes.ok) {
       let resData = await cloudRes.json();
-      let list = resData && resData.data && resData.data.palpites ? resData.data.palpites : [];
-      if (Array.isArray(list)) palpites = list.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
+      let jsonStr = resData && resData.fields && resData.fields.json && resData.fields.json.stringValue;
+      if (jsonStr) {
+        let list = JSON.parse(jsonStr);
+        if (Array.isArray(list)) palpites = list.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
+      }
     }
   } catch(e) {}
 
@@ -445,9 +448,9 @@ async function saveCloudPalpite(payload) {
 
   try {
     await fetch(CLOUD_API, {
-      method: "PUT",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "BolaoCopa2026", data: { palpites } })
+      body: JSON.stringify({ fields: { json: { stringValue: JSON.stringify(palpites) } } })
     });
   } catch(e) {}
 
@@ -466,17 +469,20 @@ async function fetchPalpites() {
     allPalpites = list.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
     renderFeed();
   } catch (err) {
-    // Busca online com suporte a CORS para GitHub Pages
+    // Busca online no Google Firebase Firestore para GitHub Pages
     try {
       const cloudRes = await fetch(CLOUD_API);
       if (cloudRes.ok) {
         let resData = await cloudRes.json();
-        let list = resData && resData.data && resData.data.palpites ? resData.data.palpites : [];
-        if (Array.isArray(list)) {
-          allPalpites = list.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
-          localStorage.setItem('fifa_2026_palpites_db', JSON.stringify(allPalpites));
-          renderFeed();
-          return;
+        let jsonStr = resData && resData.fields && resData.fields.json && resData.fields.json.stringValue;
+        if (jsonStr) {
+          let list = JSON.parse(jsonStr);
+          if (Array.isArray(list)) {
+            allPalpites = list.filter(p => !p.name.includes("Ronaldo") && !p.name.includes("Samurai"));
+            localStorage.setItem('fifa_2026_palpites_db', JSON.stringify(allPalpites));
+            renderFeed();
+            return;
+          }
         }
       }
     } catch(e) {}
