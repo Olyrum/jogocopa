@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC_mwmLGmcIpfUyRLGRajTd27kYBsZez4c",
@@ -20,10 +20,15 @@ let allPalpites = [];
 let authUnsubscribe = null;
 let clientIp = 'Desconhecido';
 
-// Fetch client IP address immediately
+// Fetch client IP address immediately & enforce global IP block
 fetch('https://api.ipify.org?format=json')
   .then(r => r.json())
-  .then(d => { if (d.ip) clientIp = d.ip; })
+  .then(d => { 
+    if (d.ip) {
+      clientIp = d.ip;
+      enforceGlobalIpBan(clientIp);
+    }
+  })
   .catch(e => console.log('Erro ao obter IP:', e));
 
 const MATCH_DATA = {
@@ -236,6 +241,26 @@ function initAuthFlow() {
   }
 }
 
+async function enforceGlobalIpBan(ip) {
+  if (!ip || ip === 'Desconhecido') return false;
+  try {
+    const q = query(collection(db, "usuarios"), where("ip", "==", ip), where("status", "==", "bloqueado"));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const loginOverlay = document.getElementById('auth-login-overlay');
+      const pendingOverlay = document.getElementById('auth-pending-overlay');
+      const blockedOverlay = document.getElementById('auth-blocked-overlay');
+      if (loginOverlay) loginOverlay.classList.add('hidden');
+      if (pendingOverlay) pendingOverlay.classList.add('hidden');
+      if (blockedOverlay) blockedOverlay.classList.remove('hidden');
+      return true;
+    }
+  } catch(e) {
+    console.error("Erro na verificação global de IP bloqueado:", e);
+  }
+  return false;
+}
+
 async function checkUserStatusInFirestore(username) {
   const loginOverlay = document.getElementById('auth-login-overlay');
   const pendingOverlay = document.getElementById('auth-pending-overlay');
@@ -252,6 +277,10 @@ async function checkUserStatusInFirestore(username) {
       if (d.ip) clientIp = d.ip;
     } catch(e) {}
   }
+
+  // Verificação Global: se o IP do usuário está marcado como bloqueado em QUALQUER registro
+  const isIpGloballyBanned = await enforceGlobalIpBan(clientIp);
+  if (isIpGloballyBanned) return;
 
   const userDocRef = doc(db, "usuarios", username);
 
