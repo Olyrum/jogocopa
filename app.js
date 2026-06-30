@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC_mwmLGmcIpfUyRLGRajTd27kYBsZez4c",
@@ -290,12 +290,32 @@ async function checkUserStatusInFirestore(username) {
       await setDoc(userDocRef, {
         nome: username,
         ip: clientIp,
+        ipOriginal: clientIp,
+        ipsAcesso: [clientIp],
         status: "pendente",
         dataCadastro: new Date().toISOString()
       });
     } else {
-      // Atualiza o IP mais recente do usuário se já existir
-      try { await setDoc(userDocRef, { ip: clientIp }, { merge: true }); } catch(e){}
+      const data = docSnap.data();
+      const ipOriginal = data.ipOriginal || data.ip;
+      const ipsConhecidos = data.ipsAcesso || [ipOriginal];
+
+      if (clientIp !== 'Desconhecido' && clientIp !== ipOriginal && !ipsConhecidos.includes(clientIp)) {
+        try {
+          await setDoc(userDocRef, {
+            ipsAcesso: arrayUnion(clientIp),
+            ultimoIpDiferente: clientIp,
+            alertaNovoIp: `⚠️ ALERTA: Acesso detectado de um NOVO IP (${clientIp}) em ${new Date().toLocaleString()}`
+          }, { merge: true });
+        } catch(e){}
+      } else if (clientIp !== 'Desconhecido') {
+        try {
+          await setDoc(userDocRef, {
+            ip: clientIp,
+            ipsAcesso: arrayUnion(clientIp)
+          }, { merge: true });
+        } catch(e){}
+      }
     }
   } catch (err) {
     console.error("Erro ao verificar status no Firestore:", err);
